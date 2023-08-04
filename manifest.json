@@ -1,0 +1,11 @@
+{
+	"id": "enhanced-footnotes",
+	"name": "Enhanced Footnotes",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Shortcuts & other functionality for footnotes",
+	"author": "zweek",
+	"authorUrl": "https://github.com/zweek",
+	"fundingUrl": "https://patreon.com/zweek",
+	"isDesktopOnly": true
+}
