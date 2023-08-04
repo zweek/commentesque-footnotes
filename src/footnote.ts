@@ -9,25 +9,26 @@ export class EnhancedFootnote {
 
 	// regexes for matching
 	private AllMarkers = /\[\^([^\[\]]+)\](?!:)/dg;				// matches [^123] , [^abc] (no ':')
-	private AllNumberedMarkers = /\[\^(\d+)\]/gi;				// matches [^123]
-	private AllDetailsNameOnly = /\[\^([^\[\]]+)\]:/g;			// matches [^123]: , [^abc]:
+	// private AllNumberedMarkers = /\[\^(\d+)\]/gi;				// matches [^123]
+	// private AllDetailsNameOnly = /\[\^([^\[\]]+)\]:/g;			// matches [^123]: , [^abc]:
 	private DetailInLine = /\[\^([^\[\]]+)\]:/;					// matches [^123]: , [^abc]:
 	private NumbersFromFootnotes = /(?<=\[\^)(\d+)(?=\])/g;		// matches 123 from [^123]
-	private NamesFromDootnotes = /(?<=\[\^)([^\[\]]+)(?=\])/;	// matches 123 from [^123] , abc from [^abc]
+	// private NamesFromDootnotes = /(?<=\[\^)([^\[\]]+)(?=\])/g;	// matches 123 from [^123] , abc from [^abc]
 
 	private cursorStart;
 	private cursorEnd;
-	private currentLineText;
+	private selectedLineText;
 	private fileText;
 
-	public AddNumberedFootnote(editor: Editor) {
+	public AddNumberedFootnote(editor: Editor)
+	{
 		this.cursorStart = editor.getCursor('from');
 		this.cursorEnd = editor.getCursor('to');
-		this.currentLineText = editor.getLine(this.cursorEnd.line);
+		this.selectedLineText = editor.getLine(this.cursorEnd.line);
 		this.fileText = editor.getValue();
 
 		// navigate to existing footnote if we need to
-		if (this.NavigateFootnote())
+		if (this.NavigateFootnote(editor))
 			return;
 
 		// INSERT MARKER
@@ -38,8 +39,10 @@ export class EnhancedFootnote {
 		let numbers: Array<number> = [];
 		let currentMax = 1;
 
-		if (matches != null) {
-			for (let i = 0; i < matches.length; i++) {
+		if (matches != null)
+		{
+			for (let i = 0; i < matches.length; i++)
+			{
 				numbers[i] = Number(matches[i]);
 				if (numbers[i] + 1 > currentMax)
 					currentMax = numbers[i] + 1;
@@ -48,19 +51,18 @@ export class EnhancedFootnote {
 
 		// insert marker at selection
 		let footnoteID = currentMax;
-		let footnoteMarker = `[^${footnoteID}]`;
-
-		let characterAtCursor = editor.getLine(this.cursorEnd.line)[this.cursorEnd.ch];
+		const footnoteMarker = `[^${footnoteID}]`;
 		
-		let isSingleCharacterSelection = this.cursorStart.line == this.cursorEnd.line && this.cursorStart.ch == this.cursorEnd.ch;
-		let isCursorInsideWord = characterAtCursor != undefined && characterAtCursor.match(/\S/); // matches any non-whitespace
+		const characterAtCursor = editor.getLine(this.cursorEnd.line)[this.cursorEnd.ch];
+		const isSingleCharacterSelection = this.cursorStart.line == this.cursorEnd.line && this.cursorStart.ch == this.cursorEnd.ch;
+		const isCursorInsideWord = characterAtCursor != undefined && characterAtCursor.match(/\S/); // matches any non-whitespace
 		// move cursor to end of word
 		if (isSingleCharacterSelection && isCursorInsideWord)
 		{
-			let endOfWord = this.currentLineText.substr(this.cursorEnd.ch).search(/\s/) // matches any whitespace
+			let endOfWord = this.selectedLineText.substr(this.cursorEnd.ch).search(/\s/) // matches any whitespace
 			let newCursorPos;
 			if (endOfWord == -1) // no whitespace at end of line
-				newCursorPos = this.currentLineText.length;
+				newCursorPos = this.selectedLineText.length;
 			else
 				newCursorPos = this.cursorEnd.ch + endOfWord;
 			editor.setCursor({line: this.cursorEnd.line, ch: newCursorPos});
@@ -73,20 +75,46 @@ export class EnhancedFootnote {
 
 		// INSERT DETAIL
 
-		let currentLineIndex = editor.lastLine();
-		let lastLineText
-
 		// clean up extra whitespace at end of file
-		console.log(this.fileText);
-		for (let i = editor.lastLine(); i > 0; i--)
+		const lastLineIndex = editor.lastLine();
+		let currentLine;
+		let currentLineIndex;
+		for (currentLineIndex = lastLineIndex; currentLineIndex >= 0; currentLineIndex--)
 		{
-			console.log(editor.getLine(i))
+			currentLine = editor.getLine(currentLineIndex);
+			if (currentLine.length > 0)
+			{
+				editor.replaceRange(
+					"",
+					{line: currentLineIndex, ch: currentLine.length},
+					{line: lastLineIndex, ch: editor.getLine(lastLineIndex).length}
+				);
+				break;
+			}
 		}
 		
+		// insert detail at end of file
+		const footnoteDetail = `[^${footnoteID}]: `;
+
+		let lastLine = editor.getLine(editor.lastLine());
+		if (lastLine.match(this.DetailInLine) == null)
+			editor.setLine(currentLineIndex, `${currentLine}\n\n${footnoteDetail}`);
+		else
+			editor.setLine(currentLineIndex, `${currentLine}\n${footnoteDetail}`);
+
+		this.NavigateFootnote(editor)
 	}
 
-	NavigateFootnote(): boolean {
-		return false
+	NavigateFootnote(editor: Editor): boolean
+	{
+		const detailMatch = editor.getLine(editor.getCursor('head').line).match(this.DetailInLine);
+		if (detailMatch != null)
+		{
+			console.log(detailMatch[1]);
+			return true;
+		}
+
+		return false;
 	}
 
 }
