@@ -28,7 +28,7 @@ export class EnhancedFootnote {
 		this.fileText = editor.getValue();
 
 		// navigate to existing footnote if we need to
-		if (this.NavigateFootnote(editor))
+		if (this.NavigateDetailToMarker(editor) || this.NavigateMarkerToDetail(editor))
 			return;
 
 		// INSERT MARKER
@@ -102,18 +102,31 @@ export class EnhancedFootnote {
 		else
 			editor.setLine(currentLineIndex, `${currentLine}\n${footnoteDetail}`);
 
-		this.NavigateFootnote(editor)
+		this.NavigateMarkerToDetail(editor)
 	}
 
-	NavigateFootnote(editor: Editor): boolean
+	NavigateDetailToMarker(editor: Editor): boolean
 	{
-		const detailMatch = editor.getLine(editor.getCursor('head').line).match(this.DetailInLine);
-		if (detailMatch != null)
+		const match = editor.getLine(editor.getCursor('head').line).match(this.DetailInLine);
+		if (match != null)
 		{
-			console.log(detailMatch[1]);
+			const matchMarker = `[^${match[1]}]`;
+			for (let i = 0; i < editor.lineCount(); i++)
+			{
+				const scanLine = editor.getLine(i);
+				if (scanLine.contains(matchMarker))
+				{
+					editor.setCursor({line: i, ch: scanLine.indexOf(matchMarker) + matchMarker.length});
+					return true;
+				}
+			}
 			return true;
 		}
+		return false;
+	}
 
+	NavigateMarkerToDetail(editor: Editor): boolean
+	{
 		return false;
 	}
 
