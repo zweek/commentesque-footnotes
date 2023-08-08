@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS: EnhancedFootnotesSettings = {
 export default class EnhancedFootnotesPlugin extends Plugin {
 	settings: EnhancedFootnotesSettings;
 	
-	private footnote;
+	private footnote: EnhancedFootnote;
 
 	async onload() {
 		await this.loadSettings();
@@ -54,9 +54,9 @@ export default class EnhancedFootnotesPlugin extends Plugin {
 
 
 class SampleSettingTab extends PluginSettingTab {
-	plugin: EnhancedFootnotes;
+	plugin: EnhancedFootnotesPlugin;
 
-	constructor(app: App, plugin: EnhancedFootnotes) {
+	constructor(app: App, plugin: EnhancedFootnotesPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
