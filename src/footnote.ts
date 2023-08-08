@@ -6,14 +6,13 @@ import {
 export class EnhancedFootnote {
 
 	// regexes for matching
-	private AllMarkers = /\[\^([^[\]]+)\](?!:)/dg;				// matches [^123] , [^abc] (no ':')
-	private MarkerInLine = /\[\^([^[\]]+)\](?!:)/d;			// matches [^123] , [^abc] (no ':')
-	private HighlitMarkerInLine = /==\[\^([^[\]]+)\](?!:)/;	// matches ==[^123], ==[^abc] (no ':')
-	// private AllNumberedMarkers = /\[\^(\d+)\]/gi;				// matches [^123]
-	// private AllDetailsNameOnly = /\[\^([^\[\]]+)\]:/g;			// matches [^123]: , [^abc]:
-	private DetailInLine = /\[\^([^[\]]+)\]:/;					// matches [^123]: , [^abc]:
-	private NumbersFromFootnotes = /(?<=\[\^)(\d+)(?=\])/g;		// matches 123 from [^123]
-	// private NamesFromDootnotes = /(?<=\[\^)([^\[\]]+)(?=\])/g;	// matches 123 from [^123] , abc from [^abc]
+	private AllMarkers = /\[\^([^[\]]+)\](?!:)/g;					// matches [^123abc] (no ':')
+	private StandaloneMarkers = /(?<=\s)\[\^([^[\]]+)\](?!:)/dg;	// matches ' [^123abc]' (excludes the whitespace in the actual match)
+	private WordMarkers = /[^\s=]+\[\^([^[\]]+)\](?!:)/dg;			// matches word[^123abc]
+	private CommentMarkers = /==.+==\[\^([^[\]]+)\](?!:)/dg;		// matches ==some text==[^123abc]
+	private DetailInLine = /\[\^([^[\]]+)\]:/;						// matches [^123]: , [^abc]:
+	private NumbersFromFootnotes = /(?<=\[\^)(\d+)(?=\])/g;			// matches 123 from [^123]
+
 
 	private cursorStart: EditorPosition;
 	private cursorEnd: EditorPosition;
@@ -103,8 +102,8 @@ export class EnhancedFootnote {
 		else
 			editor.setLine(currentLineIndex, `${currentLine}\n${footnoteDetail}`);
 
-		// this.NavigateMarkerToDetail(editor, )
-		console.log(this.cursorEnd, this.cursorStart)
+		// move cursor to detail of the now created footnote (assumes it's at the end of the file)
+		editor.setCursor({line: editor.lastLine(), ch: editor.getLine(editor.lastLine()).length})
 	}
 
 	NavigateDetailToMarker(editor: Editor, line: string): boolean
@@ -128,13 +127,34 @@ export class EnhancedFootnote {
 
 	NavigateMarkerToDetail(editor: Editor, cursor: EditorPosition, line: string): boolean
 	{
-		const matches = line.match(this.AllMarkers);
-		console.log(matches)
-		if (matches == null)
-			return false;
-
-
-		return true;
+		let match;
+		let allMatches = [];
+		while ((match = this.WordMarkers.exec(line)) != null)
+			allMatches.push(match);
+		while ((match = this.StandaloneMarkers.exec(line)) != null)
+			allMatches.push(match);
+		while ((match = this.CommentMarkers.exec(line)) != null)
+			allMatches.push(match);
+		
+		let currentLine;
+		for (let i = 0; i < allMatches.length; i++)
+		{
+			const isCursorOnMarker = cursor.ch >= allMatches[i].indices[0][0] && cursor.ch <= allMatches[i].indices[0][1];
+			if (!isCursorOnMarker)
+				continue;
+			
+			const detailToNavigateTo = `[^${allMatches[i][1]}]:`;
+			for (let j = editor.lastLine(); j > 0; j--)
+			{
+				currentLine = editor.getLine(j);
+				if (currentLine.contains(detailToNavigateTo))
+				{
+					editor.setCursor({line: j, ch: currentLine.length})
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 }
