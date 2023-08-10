@@ -34,6 +34,15 @@ export default class EnhancedFootnotesPlugin extends Plugin {
 				this.footnote.AddNumberedFootnote(editor)
 			}
 		});
+		
+		this.addCommand({
+			id: 'add-named-footnote',
+			name: 'Add named footnote',
+			hotkeys: [{modifiers: ["Mod", "Alt"], key: "m"}],
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				this.footnote.AddNamedFootnote(editor)
+			}
+		});
 
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 

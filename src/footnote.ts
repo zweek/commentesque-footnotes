@@ -19,19 +19,29 @@ export class EnhancedFootnote {
 	private selectedLineText: string;
 	private fileText: string;
 
-	public AddNumberedFootnote(editor: Editor)
+	public AddNamedFootnote(editor: Editor): void
 	{
-		this.cursorStart = editor.getCursor('from');
-		this.cursorEnd = editor.getCursor('to');
-		this.selectedLineText = editor.getLine(this.cursorEnd.line);
-		this.fileText = editor.getValue();
+		this.InitEditorInfo(editor);
+		
+		// navigate to exisiting footnote if we need to
+		if (this.NavigateDetailToMarker(editor, this.selectedLineText) ||
+			this.NavigateMarkerToDetail(editor, this.cursorEnd, this.selectedLineText))
+			return;
+
+		if (this.MoveCursorToEndOfWord(editor))
+			editor.replaceSelection("[^]");
+		else
+			editor.replaceSelection(`==${editor.getSelection()}==[^]`)
+	}
+
+	public AddNumberedFootnote(editor: Editor): void
+	{
+		this.InitEditorInfo(editor);
 
 		// navigate to existing footnote if we need to
 		if (this.NavigateDetailToMarker(editor, this.selectedLineText) ||
 			this.NavigateMarkerToDetail(editor, this.cursorEnd, this.selectedLineText))
 			return;
-
-		// INSERT MARKER
 
 		// find out which number we should use for the footnote
 		// TODO: make this re-index all the numbers
@@ -52,28 +62,12 @@ export class EnhancedFootnote {
 		const footnoteID = currentMax;
 		const footnoteMarker = `[^${footnoteID}]`;
 		
-		const characterAtCursor = editor.getLine(this.cursorEnd.line)[this.cursorEnd.ch];
-		const isSingleCharacterSelection = this.cursorStart.line == this.cursorEnd.line && this.cursorStart.ch == this.cursorEnd.ch;
-		const isCursorInsideWord = characterAtCursor != undefined && characterAtCursor.match(/\S/); // matches any non-whitespace
-		// move cursor to end of word
-		if (isSingleCharacterSelection && isCursorInsideWord)
-		{
-			const endOfWord = this.selectedLineText.substr(this.cursorEnd.ch).search(/\s/) // matches any whitespace
-			let newCursorPos;
-			if (endOfWord == -1) // no whitespace at end of line
-				newCursorPos = this.selectedLineText.length;
-			else
-				newCursorPos = this.cursorEnd.ch + endOfWord;
-			editor.setCursor({line: this.cursorEnd.line, ch: newCursorPos});
-		}
-
 		// insert marker at selection
-		if (isSingleCharacterSelection)
+		if (this.MoveCursorToEndOfWord(editor))
 			editor.replaceSelection(footnoteMarker);
 		else
 			editor.replaceSelection(`==${editor.getSelection()}==${footnoteMarker}`);
 
-		// INSERT DETAIL
 
 		// clean up extra whitespace at end of file
 		const lastLineIndex = editor.lastLine();
@@ -106,12 +100,42 @@ export class EnhancedFootnote {
 		editor.setCursor({line: editor.lastLine(), ch: editor.getLine(editor.lastLine()).length})
 	}
 
+	InitEditorInfo(editor: Editor): void
+	{
+		this.cursorStart = editor.getCursor('from');
+		this.cursorEnd = editor.getCursor('to');
+		this.selectedLineText = editor.getLine(this.cursorEnd.line);
+		this.fileText = editor.getValue();
+	}
+
+	MoveCursorToEndOfWord(editor: Editor): boolean
+	{
+		const characterAtCursor = editor.getLine(this.cursorEnd.line)[this.cursorEnd.ch];
+		const isSingleCharacterSelection = this.cursorStart.line == this.cursorEnd.line && this.cursorStart.ch == this.cursorEnd.ch;
+		const isCursorInsideWord = characterAtCursor != undefined && characterAtCursor.match(/\S/) != null; // matches any non-whitespace
+
+		if (isSingleCharacterSelection && isCursorInsideWord)
+		{
+			const endOfWord = this.selectedLineText.substring(this.cursorEnd.ch).search(/\s/) // matches any whitespace
+			let newCursorPos;
+			if (endOfWord == -1) // no whitespace at end of line
+				newCursorPos = this.selectedLineText.length;
+			else
+				newCursorPos = this.cursorEnd.ch + endOfWord;
+			editor.setCursor({line: this.cursorEnd.line, ch: newCursorPos});
+			return true;
+		}
+		return false;
+	}
+
 	NavigateDetailToMarker(editor: Editor, line: string): boolean
 	{
+		// make sure we're on a detail line
 		const match = line.match(this.DetailInLine);
 		if (match == null)
 			return false;
 
+		// find corresponding marker
 		const matchMarker = `[^${match[1]}]`;
 		for (let i = 0; i < editor.lineCount(); i++)
 		{
@@ -127,8 +151,11 @@ export class EnhancedFootnote {
 
 	NavigateMarkerToDetail(editor: Editor, cursor: EditorPosition, line: string): boolean
 	{
+		// find every marker in line
 		let match;
-		let allMatches = [];
+		const allMatches = [];
+		// this feels very scuffed, but it ensures that we find all valid markers without duplicates
+		// maybe i'll figure out a better way to do this later :]
 		while ((match = this.WordMarkers.exec(line)) != null)
 			allMatches.push(match);
 		while ((match = this.StandaloneMarkers.exec(line)) != null)
@@ -139,10 +166,13 @@ export class EnhancedFootnote {
 		let currentLine;
 		for (let i = 0; i < allMatches.length; i++)
 		{
-			const isCursorOnMarker = cursor.ch >= allMatches[i].indices[0][0] && cursor.ch <= allMatches[i].indices[0][1];
+			// find out which marker the cursor is on
+			const currentMatchIndices = allMatches[i].indices[0];
+			const isCursorOnMarker = cursor.ch >= currentMatchIndices[0] && cursor.ch <= currentMatchIndices[1];
 			if (!isCursorOnMarker)
 				continue;
 			
+			// find corresponding detail
 			const detailToNavigateTo = `[^${allMatches[i][1]}]:`;
 			for (let j = editor.lastLine(); j > 0; j--)
 			{
