@@ -1,6 +1,7 @@
 import {
 	Editor,
 	EditorPosition,
+    Keymap,
 } from 'obsidian';
 
 export class EnhancedFootnote {
@@ -29,9 +30,16 @@ export class EnhancedFootnote {
 			return;
 
 		if (this.MoveCursorToEndOfWord(editor))
+		{
 			editor.replaceSelection("[^]");
+			editor.setCursor({line: this.cursorEnd.line, ch: this.cursorEnd.ch+2})
+		}
 		else
-			editor.replaceSelection(`==${editor.getSelection()}==[^]`)
+		{
+			editor.replaceSelection(`==${editor.getSelection()}==[^]`);
+			editor.setCursor({line: this.cursorEnd.line, ch: this.cursorEnd.ch+6})
+		}
+
 	}
 
 	public AddNumberedFootnote(editor: Editor): void
@@ -68,36 +76,7 @@ export class EnhancedFootnote {
 		else
 			editor.replaceSelection(`==${editor.getSelection()}==${footnoteMarker}`);
 
-
-		// clean up extra whitespace at end of file
-		const lastLineIndex = editor.lastLine();
-		let currentLine;
-		let currentLineIndex;
-		for (currentLineIndex = lastLineIndex; currentLineIndex >= 0; currentLineIndex--)
-		{
-			currentLine = editor.getLine(currentLineIndex);
-			if (currentLine.length > 0)
-			{
-				editor.replaceRange(
-					"",
-					{line: currentLineIndex, ch: currentLine.length},
-					{line: lastLineIndex, ch: editor.getLine(lastLineIndex).length}
-				);
-				break;
-			}
-		}
-		
-		// insert detail at end of file
-		const footnoteDetail = `[^${footnoteID}]: `;
-
-		const lastLine = editor.getLine(editor.lastLine());
-		if (lastLine.match(this.DetailInLine) == null)
-			editor.setLine(currentLineIndex, `${currentLine}\n\n${footnoteDetail}`);
-		else
-			editor.setLine(currentLineIndex, `${currentLine}\n${footnoteDetail}`);
-
-		// move cursor to detail of the now created footnote (assumes it's at the end of the file)
-		editor.setCursor({line: editor.lastLine(), ch: editor.getLine(editor.lastLine()).length})
+		this.CreateFootnoteDetail(editor, footnoteID.toString());
 	}
 
 	InitEditorInfo(editor: Editor): void
@@ -113,6 +92,9 @@ export class EnhancedFootnote {
 		const characterAtCursor = editor.getLine(this.cursorEnd.line)[this.cursorEnd.ch];
 		const isSingleCharacterSelection = this.cursorStart.line == this.cursorEnd.line && this.cursorStart.ch == this.cursorEnd.ch;
 		const isCursorInsideWord = characterAtCursor != undefined && characterAtCursor.match(/\S/) != null; // matches any non-whitespace
+
+		if (isSingleCharacterSelection && !isCursorInsideWord)
+			return true;
 
 		if (isSingleCharacterSelection && isCursorInsideWord)
 		{
@@ -173,7 +155,7 @@ export class EnhancedFootnote {
 				continue;
 			
 			// find corresponding detail
-			const detailToNavigateTo = `[^${allMatches[i][1]}]:`;
+			const detailToNavigateTo = allMatches[i][1];
 			for (let j = editor.lastLine(); j > 0; j--)
 			{
 				currentLine = editor.getLine(j);
@@ -183,8 +165,44 @@ export class EnhancedFootnote {
 					return true;
 				}
 			}
+			// no detail found, creating a new one and navigating to it
+			this.CreateFootnoteDetail(editor, detailToNavigateTo);
+			editor.setCursor({line: editor.lastLine(), ch: editor.getLine(editor.lastLine()).length})
+			return true;
 		}
 		return false;
+	}
+
+	CreateFootnoteDetail(editor: Editor, footnoteID: string)
+	{
+		
+		// clean up extra whitespace at end of file
+		const lastLineIndex = editor.lastLine();
+		let currentLine;
+		let currentLineIndex;
+		for (currentLineIndex = lastLineIndex; currentLineIndex >= 0; currentLineIndex--)
+		{
+			currentLine = editor.getLine(currentLineIndex);
+			if (currentLine.length > 0)
+			{
+				editor.replaceRange(
+					"",
+					{line: currentLineIndex, ch: currentLine.length},
+					{line: lastLineIndex, ch: editor.getLine(lastLineIndex).length}
+				);
+				break;
+			}
+		}
+		
+		// insert detail at end of file
+		const footnoteDetail = `[^${footnoteID}]: `;
+
+		const lastLine = editor.getLine(editor.lastLine());
+		if (lastLine.match(this.DetailInLine) == null)
+			editor.setLine(currentLineIndex, `${currentLine}\n\n${footnoteDetail}`);
+		else
+			editor.setLine(currentLineIndex, `${currentLine}\n${footnoteDetail}`);
+
 	}
 
 }
