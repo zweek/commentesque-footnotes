@@ -1,7 +1,6 @@
 import {
 	Editor,
 	EditorPosition,
-    Keymap,
 } from 'obsidian';
 
 export class EnhancedFootnote {
