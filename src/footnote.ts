@@ -201,6 +201,7 @@ export class EnhancedFootnote {
 		else
 			editor.setLine(currentLineIndex, `${currentLine}\n${footnoteDetail}`);
 
+		editor.setCursor({ line: editor.lastLine(), ch: editor.getLine(editor.lastLine()).length })
 	}
 
 }
