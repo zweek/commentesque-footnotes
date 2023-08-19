@@ -6,7 +6,6 @@ import {
 export class EnhancedFootnote {
 
 	// regexes for matching
-	private AllMarkers = /\[\^([^[\]]+)\](?!:)/g;					// matches [^123abc] (no ':')
 	private StandaloneMarkers = /(?<=\s)\[\^([^[\]]+)\](?!:)/dg;	// matches ' [^123abc]' (excludes the whitespace in the actual match)
 	private WordMarkers = /[^\s=]+\[\^([^[\]]+)\](?!:)/dg;			// matches word[^123abc]
 	private CommentMarkers = /==.+==\[\^([^[\]]+)\](?!:)/dg;		// matches ==some text==[^123abc]
@@ -104,6 +103,7 @@ export class EnhancedFootnote {
 			else
 				newCursorPos = this.cursorEnd.ch + endOfWord;
 			editor.setCursor({line: this.cursorEnd.line, ch: newCursorPos});
+			this.cursorEnd.ch = newCursorPos;
 			return true;
 		}
 		return false;
@@ -154,7 +154,7 @@ export class EnhancedFootnote {
 				continue;
 			
 			// find corresponding detail
-			const detailToNavigateTo = allMatches[i][1];
+			const detailToNavigateTo = `[^${allMatches[i][1]}]:`;
 			for (let j = editor.lastLine(); j > 0; j--)
 			{
 				currentLine = editor.getLine(j);
@@ -165,7 +165,7 @@ export class EnhancedFootnote {
 				}
 			}
 			// no detail found, creating a new one and navigating to it
-			this.CreateFootnoteDetail(editor, detailToNavigateTo);
+			this.CreateFootnoteDetail(editor, allMatches[i][1]);
 			editor.setCursor({line: editor.lastLine(), ch: editor.getLine(editor.lastLine()).length})
 			return true;
 		}
@@ -174,7 +174,6 @@ export class EnhancedFootnote {
 
 	CreateFootnoteDetail(editor: Editor, footnoteID: string)
 	{
-		
 		// clean up extra whitespace at end of file
 		const lastLineIndex = editor.lastLine();
 		let currentLine;
@@ -205,5 +204,3 @@ export class EnhancedFootnote {
 	}
 
 }
-
-
