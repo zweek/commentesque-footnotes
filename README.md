@@ -10,10 +10,10 @@ These same shortcuts also let you navigate between the main text and a footnote 
 
 
 Select a piece of text and the shortcut will add a `==highlight==` around it, followed by the footnote:
-![demo1](https://github.com/zweek/enhanced-footnotes/assets/70382336/a5e5b173-3b76-413a-8fef-c5c674fed873)
+![demo1](https://github.com/zweek/commentesque-footnotes/assets/70382336/9f2949cd-8220-48c2-978e-0737a38a7acf)
 
 Footnote markers will automatically be placed at the end of a word if your cursor is inside a word:
-![demo2](https://github.com/zweek/enhanced-footnotes/assets/70382336/473cb7cb-d648-4d93-a8e0-4fa9cb8b5066)
+![demo2](https://github.com/zweek/commentesque-footnotes/assets/70382336/cca86dbf-264e-40b8-9e2d-1496e3fffb1f)
 
 ### Features that would be pretty cool and awesome and epic
 
