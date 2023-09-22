@@ -1,9 +1,9 @@
 {
-	"id": "enhanced-footnotes",
-	"name": "Enhanced Footnotes",
+	"id": "commentesque-footnotes",
+	"name": "Commentesque Footnotes",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Shortcuts & other functionality for footnotes",
+	"description": "Footnote shortcuts that work a bit like comments in Google Docs & Notion",
 	"author": "zweek",
 	"authorUrl": "https://github.com/zweek",
 	"fundingUrl": "https://patreon.com/zweek",

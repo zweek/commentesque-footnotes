@@ -5,7 +5,7 @@ import {
 	Plugin,
 } from 'obsidian';
 
-export default class EnhancedFootnotesPlugin extends Plugin {
+export default class CommentesqueFootnotesPlugin extends Plugin {
 	
 	private footnote: CommentesqueFootnote;
 
