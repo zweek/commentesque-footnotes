@@ -3,7 +3,7 @@ import {
 	EditorPosition,
 } from 'obsidian';
 
-export class EnhancedFootnote {
+export class CommentesqueFootnote {
 
 	// regexes for matching
 	private StandaloneMarkers = /(?<=\s)\[\^([^[\]]+)\](?!:)/dg;	// matches ' [^123abc]' (excludes the whitespace in the actual match)
@@ -43,6 +43,8 @@ export class EnhancedFootnote {
 	public AddNumberedFootnote(editor: Editor): void
 	{
 		this.InitEditorInfo(editor);
+
+		console.log("hello")
 
 		// navigate to existing footnote if we need to
 		if (this.NavigateDetailToMarker(editor, this.selectedLineText) ||

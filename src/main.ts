@@ -1,4 +1,4 @@
-import { EnhancedFootnote } from "./footnote"
+import { CommentesqueFootnote } from "./footnote"
 import {
 	Editor,
 	MarkdownView,
@@ -7,10 +7,10 @@ import {
 
 export default class EnhancedFootnotesPlugin extends Plugin {
 	
-	private footnote: EnhancedFootnote;
+	private footnote: CommentesqueFootnote;
 
 	async onload() {
-		this.footnote = new EnhancedFootnote()
+		this.footnote = new CommentesqueFootnote()
 
 		this.addCommand({
 			id: 'add-numbered-footnote',
